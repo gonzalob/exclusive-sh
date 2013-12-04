@@ -1,6 +1,10 @@
 #!/bin/sh
 CONFIG=/etc/default/exclusive-sh
 LOCKDIR=/var/lock/exclusive-sh
+LOCKS=
+WAIT=
+TASK=
+VERBOSE=true
 
 lockdir_not_available() {
  echo "Lock directory $LOCKDIR not found. $0 -h for help."
@@ -13,54 +17,72 @@ Usage: $0 [options]
 where options is:
 -c use given alternative config file
 -q quiet
--l lock execution with using the given lock name
+-l lock execution with using the given lock name. may be used more than once
 -d use specified lock directory
 -t task to execute
+-w wait on lock. may be used more than once
 EOF
  exit
 }
 
-acquire_lock() {
- if [ -n "$1" ]; then
-  log "Locking exclusive shell execution with name $LOCKNAME..."
-  echo $! > $LOCKDIR/$LOCKNAME
+acquire_locks() {
+ if [ -n "$LOCKS" ]; then
+  log 'Locking exclusive shell execution'
+  for LOCK in $LOCKS; do
+   log " ($LOCK)..."
+   echo $! > $LOCKDIR/$LOCK
+  done
   complete
  fi
 }
 
-release_lock() {
- if [ -n "$1" ]; then
-  log "Releasing exclusive shell execution lock $LOCKNAME..."
-  rm $LOCKDIR/$LOCKNAME
+release_locks() {
+ if [ -n "$LOCKS" ]; then
+  log 'Releasing exclusive shell execution'
+  for LOCK in $LOCKS; do
+   log " ($LOCK)..."
+   rm $LOCKDIR/$LOCK
+  done
   complete
  fi
 }
 
 log() {
- [ "$VERBOSE" = false ] || echo -n "$1"
+ [ "$VERBOSE" = true ] && echo -n "$1"
 }
 
 complete() {
- [ "$VERBOSE" = false ] || echo ' done.'
+ [ "$VERBOSE" = true ] && echo ' done.'
 }
 
-while getopts l:c:d:t:hq opt; do
+load_config() {
+ [ -r "$CONFIG"  ] && . $CONFIG
+ [ -d "$LOCKDIR" ] || lockdir_not_available
+}
+
+wait_on_locks() {
+ log 'Waiting for exclusive shell script execution to be allowed...'
+ QUERY=-false
+ for LOCK in $WAIT; do QUERY="$QUERY -o -name $LOCK"; done
+ while [ "`find $LOCKDIR $QUERY`" ]; do echo -n .; sleep 1; done
+ complete
+}
+
+
+while getopts l:c:d:t:hqw: opt; do
  case "$opt" in
-  l) LOCKNAME=$OPTARG;;
+  l) LOCKS="$LOCKS $OPTARG";;
   c) CONFIG=$OPTARG;;
   d) LOCKDIR=$OPTARG;;
   t) TASK=$OPTARG;;
   q) VERBOSE=false;;
+  w) WAIT="$WAIT $OPTARG";;
   h|*) usage;;
  esac
 done
 
-[ -d "$LOCKDIR" ] || lockdir_not_available
-
-log 'Waiting for exclusive shell script execution to be allowed...'
-while [ "`ls -A $LOCKDIR`" ]; do echo -n .; sleep 1; done
-complete
-
-acquire_lock $LOCKNAME
+load_config
+wait_on_locks
+acquire_locks
 $TASK
-release_lock $LOCKNAME
+release_locks
