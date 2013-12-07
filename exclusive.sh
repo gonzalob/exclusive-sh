@@ -68,6 +68,7 @@ wait_on_locks() {
  complete
 }
 
+load_config
 
 while getopts l:c:d:t:hqw: opt; do
  case "$opt" in
@@ -81,7 +82,6 @@ while getopts l:c:d:t:hqw: opt; do
  esac
 done
 
-load_config
 wait_on_locks
 acquire_locks
 $TASK
