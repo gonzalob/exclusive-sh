@@ -30,7 +30,7 @@ acquire_locks() {
   log 'Locking exclusive shell execution'
   for LOCK in $LOCKS; do
    log " ($LOCK)..."
-   echo $! > $LOCKDIR/$LOCK
+   echo $$ > $LOCKDIR/$LOCK
   done
   complete
  fi
