@@ -11,8 +11,9 @@ certainly be more up-to-date than a README file ;-)
 
 ## Configuration ##
 
-Any command line argument has a corresponding configuration variable, 
+Every command line argument has a corresponding configuration variable, 
 which can be defined in /etc/default/exclusive-sh for convenience.
+Command line arguments, however, take precendence over system settings.
 
 # A word of caution #
 
@@ -23,4 +24,3 @@ as soon as the _first_ process ends, not the last.
 
 # License #
 This software is licensed under the [GPLv3](http://www.gnu.org/licenses/gpl.txt).
-
